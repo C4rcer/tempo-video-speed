@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo settings</title>
+  <link rel="stylesheet" href="../popup/popup.css">
+  <link rel="stylesheet" href="../shared/support.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <span class="brand"><img src="../icons/icon.svg" alt="" width="26" height="26"> Tempo settings</span>
+      <a class="support-pill" data-support><span class="heart">&#x2665;</span> Support Tempo</a>
+    </header>
+
+    <section class="card">
+      <h2>Speed</h2>
+      <label class="row"><span>Tempo is on</span><input id="enabled" type="checkbox"></label>
+      <label class="row"><span>Default speed for new sites</span><input id="defaultSpeed" type="number" min="0.07" max="16" step="0.05"></label>
+      <label class="row"><span>Step for slower / faster</span><input id="step" type="number" min="0.01" max="4" step="0.05"></label>
+      <label class="row"><span>Favourite speed</span><input id="favoriteSpeed" type="number" min="0.07" max="16" step="0.05"></label>
+      <label class="row"><span>Rewind / skip ahead by (seconds)</span><input id="seekSeconds" type="number" min="1" max="600" step="1"></label>
+      <label class="row"><span>Popup preset buttons</span><input id="presets" type="text" spellcheck="false"></label>
+      <label class="row"><span>Remember speed</span>
+        <select id="remember">
+          <option value="site">Per site (youtube.com, twitch.tv, ...)</option>
+          <option value="global">Same speed everywhere</option>
+          <option value="off">Don't remember (always start at default)</option>
+        </select>
+      </label>
+      <label class="row"><span>Lock speed (undo every change the site makes)<small>Off: picking a speed in a site's own player menu is respected.</small></span><input id="lockSpeed" type="checkbox"></label>
+      <label class="row"><span>Keep voices at normal pitch</span><input id="preservePitch" type="checkbox"></label>
+      <label class="row"><span>Also control audio players (podcasts, music)</span><input id="controlAudio" type="checkbox"></label>
+    </section>
+
+    <section class="card">
+      <h2>On-video control</h2>
+      <label class="row"><span>Show the speed on videos</span>
+        <select id="overlay">
+          <option value="always">Always (faint until hovered)</option>
+          <option value="flash">Only briefly when the speed changes</option>
+          <option value="hidden">Never</option>
+        </select>
+      </label>
+      <label class="row"><span>Resting opacity</span><input id="overlayOpacity" type="range" min="0.1" max="1" step="0.05"></label>
+    </section>
+
+    <section class="card">
+      <h2>Keyboard shortcuts</h2>
+      <p class="muted">Work on any page with a video, except while you're typing in a text box. Click a key to change it, Backspace to turn it off.</p>
+      <div id="keys"></div>
+    </section>
+
+    <section class="card">
+      <h2>Sites</h2>
+      <h3>Remembered speeds</h3>
+      <div id="sites" class="sites"></div>
+      <h3>Tempo is off on</h3>
+      <textarea id="blockedSites" rows="4" spellcheck="false" placeholder="one site per line, e.g. example.com"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>Time saved</h2>
+      <p id="stats" class="stat"></p>
+      <button id="resetStats" class="link-btn" type="button">Reset counter</button>
+    </section>
+
+    <section class="card support">
+      <h2>Support</h2>
+      <p>Tempo is free and every feature is unlocked for everyone. There are no ads, no accounts and no tracking: your settings never leave this browser. If Tempo saves you time, a tip on Ko-fi helps keep it maintained.</p>
+      <a class="support-pill" data-support><span class="heart">&#x2665;</span> Buy me a coffee on Ko-fi</a>
+    </section>
+  </div>
+  <div id="toast" class="toast" hidden>Saved</div>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

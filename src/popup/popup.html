@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tempo</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="../shared/support.css">
+</head>
+<body>
+  <header>
+    <span class="brand"><img src="../icons/icon.svg" alt="" width="18" height="18"> Tempo</span>
+    <a class="support-pill" data-support title="Tempo is free forever, with no ads and no tracking. Tips keep it maintained."><span class="heart">&#x2665;</span> Support</a>
+    <button id="btnOptions" class="icon-btn" title="Settings and shortcuts" aria-label="Settings">&#x2699;</button>
+  </header>
+
+  <main>
+    <div id="notice" class="notice" hidden></div>
+
+    <section id="controls">
+      <div class="speed-row">
+        <button id="btnSlower" class="round" title="Slower" aria-label="Slower">&#x2212;</button>
+        <output id="rate" aria-live="polite">1&#xd7;</output>
+        <button id="btnFaster" class="round" title="Faster" aria-label="Faster">+</button>
+      </div>
+      <input id="slider" type="range" min="0.25" max="4" step="0.05" value="1" aria-label="Playback speed">
+      <div id="presets" class="presets"></div>
+      <p id="mediaInfo" class="muted small"></p>
+    </section>
+
+    <section class="site-row">
+      <label class="switch">
+        <input id="siteEnabled" type="checkbox" checked>
+        <span>Enabled on <strong id="siteName">this site</strong></span>
+      </label>
+    </section>
+
+    <div id="supportCard" hidden></div>
+  </main>
+
+  <footer>
+    <span id="saved" class="muted small"></span>
+    <span class="muted small" id="keysHint"></span>
+  </footer>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
