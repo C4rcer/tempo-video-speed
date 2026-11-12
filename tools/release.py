@@ -291,22 +291,41 @@ def contrib():
     print("contributions_url set:", (res.get("contributions_url") or {}).get("url"))
 
 
+def _caption(pv):
+    c = pv.get("caption")
+    return c.get("en-US") if isinstance(c, dict) else c
+
+
 def screenshots():
     shots = sorted((ASSETS / "screenshots").glob("*.png"))
     if not shots:
         die("no store-assets/screenshots/*.png")
     captions = listing().get("screenshot_captions", {})
+    names = {}
     for i, p in enumerate(shots):
         st, res = call("POST", f"/addons/addon/{guid()}/previews/", data={"position": str(i)}, files={"image": p})
         if st not in (200, 201):
             die(f"{p.name}: upload failed ({st}): {res}")
-        cap = captions.get(p.name)
-        if cap:
-            cst, cres = call("PATCH", f"/addons/addon/{guid()}/previews/{res['id']}/", data={"caption": {"en-US": cap}})
-            if cst != 200:
-                print(f"  WARNING: caption for {p.name} not saved ({cst}): {cres}")
+        names[res["id"]] = p.name
         print(f"  uploaded {p.name} (preview id {res['id']})")
-
+    # Captions go on after every upload, then get read back. AMO processes each image
+    # in the background and has dropped a caption saved right after its upload even
+    # though the PATCH answered 200 (seen on Tempo and Forte, 2026-11-09).
+    for attempt in range(4):
+        time.sleep(20)
+        st, a = call("GET", f"/addons/addon/{guid()}/")
+        missing = [(pv["id"], names[pv["id"]]) for pv in a.get("previews", [])
+                   if pv["id"] in names and captions.get(names[pv["id"]])
+                   and _caption(pv) != captions[names[pv["id"]]]]
+        if not missing:
+            print("  captions verified")
+            return
+        for pid, name in missing:
+            cst, cres = call("PATCH", f"/addons/addon/{guid()}/previews/{pid}/",
+                             data={"caption": {"en-US": captions[name]}})
+            if cst != 200:
+                print(f"  WARNING: caption for {name} not saved ({cst}): {cres}")
+    die("captions still missing after retries: " + ", ".join(n for _, n in missing))
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
