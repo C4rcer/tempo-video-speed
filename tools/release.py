@@ -10,6 +10,9 @@ Run from the add-on folder (the one holding src/ and store-assets/):
                                          listing on first run, adds a version after.
   python tools/release.py status         show listing + latest version review state
   python tools/release.py contrib        push contributions_url (Ko-fi) to the listing
+  python tools/release.py icon           upload store-assets/icon-128.png as the listing icon
+                                         (AMO never uses an SVG manifest icon; without
+                                         this the listing shows a grey puzzle piece)
   python tools/release.py screenshots    upload store-assets/screenshots/*.png
                                          (waits out AMO's image throttle)
 
@@ -264,6 +267,11 @@ def submit(notes):
             die(f"listing create failed ({st}): {res}")
         print(f"Listing created: id {res.get('id')}, status {res.get('status')}")
         print(f"Public URL after review: https://addons.mozilla.org/firefox/addon/{meta['slug']}/")
+        if ICON.exists():
+            ok, msg = _upload_icon()
+            print(("icon set: " if ok else "WARNING: icon not set, run `icon` later: ") + msg)
+        else:
+            print("WARNING: no store-assets/icon-128.png, the listing shows AMO's default icon")
 
 
 def status():
@@ -289,6 +297,29 @@ def contrib():
     if st != 200:
         die(f"PATCH failed ({st}): {res}")
     print("contributions_url set:", (res.get("contributions_url") or {}).get("url"))
+
+
+ICON = ASSETS / "icon-128.png"
+
+
+def _upload_icon():
+    """PATCH the listing icon (multipart). Returns (ok, url or error)."""
+    st, res = call("PATCH", f"/addons/addon/{guid()}/", files={"icon": ICON})
+    if st != 200:
+        return False, f"upload failed ({st}): {res}"
+    url = (res.get("icons") or {}).get("128") or res.get("icon_url") or ""
+    if not url or "/default-" in url:
+        return False, f"AMO still shows its default icon ({url})"
+    return True, url
+
+
+def icon():
+    if not ICON.exists():
+        die("no store-assets/icon-128.png (square PNG, 128x128)")
+    ok, msg = _upload_icon()
+    if not ok:
+        die(msg)
+    print("icon set:", msg)
 
 
 def _caption(pv):
@@ -329,12 +360,12 @@ def screenshots():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["build", "lint", "submit", "status", "contrib", "screenshots"])
+    ap.add_argument("cmd", choices=["build", "lint", "submit", "status", "contrib", "icon", "screenshots"])
     ap.add_argument("--notes", default="", help="release notes for submit")
     a = ap.parse_args()
     if not (SRC / "manifest.json").exists():
         die("run this from the add-on folder (src/manifest.json not found)")
-    {"build": build, "lint": lint, "status": status, "contrib": contrib,
+    {"build": build, "lint": lint, "status": status, "contrib": contrib, "icon": icon,
      "screenshots": screenshots, "submit": lambda: submit(a.notes)}[a.cmd]()
 
 

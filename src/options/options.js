@@ -1,4 +1,5 @@
 import { wireSupportLinks } from "../shared/support.js";
+import { renderMoreAddons } from "../shared/more-addons.js";
 import {
   ACTIONS, DEFAULTS, clampRate, formatDuration, formatRate, getSettings, saveSettings,
 } from "../shared/settings.js";
@@ -133,6 +134,7 @@ async function renderStats() {
 
 async function init() {
   wireSupportLinks();
+  renderMoreAddons(document.getElementById("moreAddons")).catch(() => {});
   settings = await getSettings();
   fill();
   renderSites();

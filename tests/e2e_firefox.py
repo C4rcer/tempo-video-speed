@@ -74,6 +74,7 @@ def main():
     opts.set_preference("extensions.webextensions.uuids", json.dumps({ADDON_ID: UUID}))
     opts.set_preference("media.autoplay.default", 0)
     opts.set_preference("media.autoplay.blocking_policy", 0)
+    opts.set_preference("media.volume_scale", "0.0")  # muted: the test page plays a tone, nothing should be audible
     driver = webdriver.Firefox(options=opts)
     driver.set_window_size(1280, 900)
     js = driver.execute_script
@@ -215,6 +216,47 @@ def main():
         wait(lambda: driver.find_elements(By.CSS_SELECTOR, ".key-btn"))
         sites_text = wait(lambda: driver.find_element(By.ID, "sites").text)
         check("options lists remembered site", "127.0.0.1" in (sites_text or ""), sites_text)
+        # ---- settings: rate link and "More free add-ons" (expected list comes from the shared file)
+        more = wait(lambda: ext_call("""
+          const items = [...document.querySelectorAll('#moreAddons .more-item a')];
+          if (!items.length) return null;
+          const rate = document.querySelector('[data-rate]');
+          const all = document.querySelector('[data-more-all]');
+          const m = await import('/shared/more-addons.js');
+          const me = browser.runtime.id;
+          const self = m.ADDONS.find((a) => a.id === me);
+          const fake = [{id: 'a', live: true, android: false}, {id: 'b', live: true, android: true},
+                        {id: 'self', live: true, android: true}, {id: 'c', live: false, android: true}];
+          return {
+            names: items.map((a) => a.querySelector('.more-name').textContent),
+            expected: m.ADDONS.filter((a) => a.live && a.id !== me).map((a) => a.name),
+            left_out: m.ADDONS.filter((a) => !a.live || a.id === me).map((a) => a.name),
+            self_slug: self ? self.slug : null, self_live: self ? self.live : null,
+            hrefs: items.map((a) => a.href),
+            newTab: items.every((a) => a.target === '_blank' && a.rel === 'noopener'),
+            rate: rate.hidden ? null : rate.href, rateNewTab: rate.target === '_blank',
+            all: all.href,
+            androidPick: m.moreAddons('self', 'android', fake).map((x) => x.id),
+            desktopPick: m.moreAddons('self', 'win', fake).map((x) => x.id),
+          };
+        """))
+        more = more if isinstance(more, dict) else {}
+        check("this add-on is marked live in the shared add-on list", more.get("self_live") is True, more.get("self_slug"))
+        check("settings page lists every other live add-on, in order",
+              bool(more.get("names")) and more.get("names") == more.get("expected"), (more.get("names"), more.get("expected")))
+        check("it leaves out itself and add-ons still in review",
+              bool(more.get("names")) and not set(more["names"]) & set(more.get("left_out") or []), more.get("left_out"))
+        check("each listed add-on links to its AMO page in a new tab",
+              bool(more.get("hrefs")) and all(h.startswith("https://addons.mozilla.org/firefox/addon/") for h in more["hrefs"])
+              and more.get("newTab") is True, more.get("hrefs"))
+        check("rate link opens this add-on's own AMO page",
+              bool(more.get("self_slug")) and more.get("rate") == "https://addons.mozilla.org/firefox/addon/%s/" % more.get("self_slug")
+              and more.get("rateNewTab") is True, more.get("rate"))
+        check("see-all link opens the author's AMO page",
+              more.get("all") == "https://addons.mozilla.org/firefox/user/20013808/", more.get("all"))
+        check("list skips itself and unreleased add-ons, and desktop-only ones on Android",
+              more.get("desktopPick") == ["a", "b"] and more.get("androidPick") == ["b"],
+              (more.get("desktopPick"), more.get("androidPick")))
         driver.find_elements(By.CSS_SELECTOR, ".key-btn")[1].click()
         ActionChains(driver).send_keys("f").perform()
         stored = wait(lambda: ext_call("const {settings} = await browser.storage.local.get('settings'); return settings && settings.keys.faster;") == "f")
