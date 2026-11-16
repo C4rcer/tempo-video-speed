@@ -20,13 +20,13 @@ export const ADDONS = [
   { id: "prune-bookmark-cleaner@c4rcer", slug: "prune-bookmark-cleaner", name: "Prune",
     what: "Find dead links and duplicate bookmarks, and clean up with undo", android: false, live: true },
   { id: "pipette-color-picker@c4rcer", slug: "pipette-color-picker", name: "Pipette",
-    what: "Pick any color on a page and copy it as HEX, RGB or HSL", android: false, live: false },
+    what: "Pick any color on a page and copy it as HEX, RGB or HSL", android: false, live: true },
   { id: "excerpt-markdown-clipper@c4rcer", slug: "excerpt-markdown-web-clipper", name: "Excerpt",
-    what: "Clip an article or a selection to clean Markdown", android: false, live: false },
+    what: "Clip an article or a selection to clean Markdown", android: false, live: true },
   { id: "heron-website-change-monitor@c4rcer", slug: "heron-website-change-monitor", name: "Heron",
-    what: "Get told when a web page, or one part of it, changes", android: false, live: false },
+    what: "Get told when a web page, or one part of it, changes", android: false, live: true },
   { id: "dustpan-cookie-cleaner@c4rcer", slug: "dustpan-cookie-cleaner", name: "Dustpan",
-    what: "Delete a site's cookies after you close its last tab, except the sites you keep", android: false, live: false },
+    what: "Delete a site's cookies after you close its last tab, except the sites you keep", android: false, live: true },
 ];
 
 export function amoUrl(addon) {
