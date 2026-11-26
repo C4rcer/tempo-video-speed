@@ -13,8 +13,8 @@
     "android"
   ],
   "license": "MPL-2.0",
-  "homepage": "",
-  "support_url": "",
+  "homepage": "https://github.com/C4rcer/tempo-video-speed",
+  "support_url": "https://github.com/C4rcer/tempo-video-speed/issues",
   "contributions_url": "https://ko-fi.com/carcer7378",
   "screenshot_captions": {
     "1-popup.png": "Set any speed from the toolbar popup, with presets and per-site memory",

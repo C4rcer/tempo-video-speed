@@ -1,4 +1,4 @@
-/* Shared Ko-fi pill + milestone card. Uses the host page's --accent/--fg/--muted/--border/--bg2 tokens. */
+/* Shared Ko-fi pill, rating pill + milestone card. Uses the host page's --accent/--fg/--muted/--border/--bg2 tokens. */
 .support-pill {
   display: inline-flex;
   align-items: center;
@@ -22,6 +22,9 @@
   18% { transform: scale(1.12); }
 }
 @media (prefers-reduced-motion: reduce) { .support-pill .heart { animation: none; } }
+/* The milestone card's first ask: a rating instead of a tip. */
+.support-pill.rate:hover { border-color: #d99a0b; background: rgba(245, 166, 35, 0.14); }
+.support-pill .star { color: #e39b0b; }
 
 .support-card {
   margin: 10px 0 0;

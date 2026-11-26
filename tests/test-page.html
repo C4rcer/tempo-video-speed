@@ -107,6 +107,33 @@
       document.body.innerHTML = '<video id="main" controls style="width:100%;height:100vh;display:block;background:#000"></video>';
       document.body.style.margin = "0";
       window.ready = makeVideo("Embedded player", 200).then((u) => { document.getElementById("main").src = u; return u; });
+    } else if (params.has("keys")) {
+      // A site with its own single-key shortcuts and no player: only <audio>
+      // elements, as a mail or chat page keeps for its notification sounds.
+      document.getElementById("mainPlayer").remove();
+      document.getElementById("extras").remove();
+      window.seen = [];
+      document.addEventListener("keydown", (e) => window.seen.push(e.key));
+      // A WAV of silence with an exact length, so "a short sound" and "long audio" are real durations.
+      window.makeWav = (seconds) => {
+        const rate = 8000;
+        const n = Math.round(seconds * rate);
+        const buf = new ArrayBuffer(44 + n);
+        const v = new DataView(buf);
+        const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+        str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVE"); str(12, "fmt ");
+        v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+        str(36, "data"); v.setUint32(40, n, true);
+        new Uint8Array(buf, 44).fill(128);
+        return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+      };
+      for (const id of ["ping", "podcast"]) {
+        const a = document.createElement("audio");
+        a.id = id;
+        document.body.append(a);
+      }
+      window.ready = Promise.resolve("keys");
     } else if (params.has("relay")) {
       // Only an embedded player: keys pressed in the top page must reach the iframe.
       document.getElementById("mainPlayer").remove();

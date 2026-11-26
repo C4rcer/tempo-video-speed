@@ -11,7 +11,9 @@ scraping), so it should need very little upkeep.
 ## Features
 
 - 0.07x to 16x, configurable step, presets in the popup
-- Shortcuts on every site (S / D / R / G / Z / X / V, all rebindable); ignored while typing
+- Shortcuts on every site (S / D / R / G / Z / X / V, all rebindable); ignored while typing,
+  and left to the page when it has no player (only a video big enough to be one, anything
+  playing with sound, or paused media of 30 s or more that has played takes a key)
 - Small on-video control (always faint / flash on change / hidden), tap-to-open on Android
 - Per-site or global speed memory; one-click "off on this site"
 - Re-applies speed when a site resets it on the next video, but adopts a speed
@@ -34,7 +36,7 @@ src/                     everything that ships
   popup/                 toolbar popup (?tab=<id> opens it against a tab, for tests)
   options/               settings page
   shared/settings.js     defaults + helpers for background/popup/options
-  shared/support.*       Ko-fi pill + milestone thank-you card (from the template)
+  shared/support.*       Ko-fi pill + one-time milestone card: a rating ask first, tips later (from the template)
   shared/more-addons.*   "More free add-ons" card + rate link (same file in every add-on; set `live: true` as listings are approved)
 store-assets/listing.json  AMO listing text, categories, Ko-fi contributions_url
 store-assets/screenshots/  1280x800 listing images (made by tests/screenshots.py)
@@ -47,7 +49,7 @@ tools/release.py         build / lint / submit / status / contrib / screenshots
 ```powershell
 python tools/release.py lint                 # build + web-ext lint the zip (expect 0/0/0)
 python -m pip install selenium pillow        # once, for the tests
-python tests/e2e_firefox.py                  # 38 checks in headless Firefox
+python tests/e2e_firefox.py                  # 53 checks in headless Firefox
 python tests/screenshots.py                  # regenerate store screenshots
 ```
 

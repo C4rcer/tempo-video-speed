@@ -77,6 +77,8 @@
     const st = {
       ctl, ui: null, loadAt: performance.now(), played: false, fights: [], yieldUntil: 0, lastT: null, lastW: 0,
       live: false, liveChosen: false,
+      // Has this element ever played? Unlike `played` it is not reset by a new source.
+      used: !el.paused || (el.played ? el.played.length > 0 : false),
     };
     state.set(el, st);
     media.add(el);
@@ -91,7 +93,7 @@
       });
     }
     for (const t of ["loadedmetadata", "canplay", "play"]) on(t, () => apply(el));
-    on("playing", () => { st.played = true; apply(el); });
+    on("playing", () => { st.played = true; st.used = true; apply(el); });
     on("timeupdate", () => track(el, st));
     apply(el);
     if (el instanceof HTMLVideoElement) buildOverlay(el, st);
@@ -202,6 +204,32 @@
     reportSoon();
   }
 
+  // A video large enough to carry the on-video control.
+  const bigEnough = (el) => el.offsetWidth >= 160 && el.offsetHeight >= 90;
+
+  // Is this element worth taking a key press away from the page for? Tempo's
+  // keys are plain letters, and mail, chat and feed sites use the same letters
+  // as their own shortcuts while keeping a silent <audio> around for
+  // notification sounds. So a key is only taken for:
+  //   - a video big enough to be a player,
+  //   - anything playing with sound right now,
+  //   - paused media that has played and runs 30 s or longer (a lecture or a
+  //     podcast, not a ping).
+  // The speed itself is still applied to every element; this only decides keys.
+  const EFFECT_SECONDS = 30;
+  function controllable(el) {
+    const st = state.get(el);
+    if (!st) return false;
+    if (el instanceof HTMLVideoElement && bigEnough(el)) return true;
+    if (!el.paused) return !el.muted && el.volume > 0;
+    return st.used && !(el.duration < EFFECT_SECONDS); // unknown or endless counts as long
+  }
+
+  function hasControllable() {
+    for (const el of media) if (controllable(el)) return true;
+    return false;
+  }
+
   function primary() {
     let best = null;
     let bestScore = -1;
@@ -261,9 +289,10 @@
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const action = Object.keys(settings.keys).find((a) => settings.keys[a] === k);
     if (!action) return;
-    if (!media.size) {
-      // The video may live in another frame (e.g. an embed): let the
-      // background hand the key to whichever frame has media.
+    if (!hasControllable()) {
+      // Nothing in this frame is worth the key (see controllable), so the page
+      // keeps it. A player may live in another frame (e.g. an embed): let the
+      // background hand the key to whichever frame has one.
       send({ type: "tempo:relayKey", action });
       return;
     }
@@ -346,8 +375,7 @@
   function position(el, host, pill) {
     host.style.setProperty("top", el.offsetTop + "px", "important");
     host.style.setProperty("left", el.offsetLeft + "px", "important");
-    const small = el.offsetWidth < 160 || el.offsetHeight < 90;
-    pill.classList.toggle("gone", small || overlaysHidden || settings.overlay === "hidden");
+    pill.classList.toggle("gone", !bigEnough(el) || overlaysHidden || settings.overlay === "hidden");
   }
 
   function updateOverlay(el) {
@@ -456,7 +484,7 @@
         else desired = clamp(msg.rate);
         return undefined;
       case "tempo:key":
-        if (active && media.size) run(msg.action);
+        if (active && hasControllable()) run(msg.action);
         return undefined;
       case "tempo:query": {
         const p = primary();

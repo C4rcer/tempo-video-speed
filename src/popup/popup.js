@@ -86,7 +86,7 @@ async function renderStats() {
     ? `Time saved: ${formatDuration(saved)}`
     : "Time saved shows here as you watch";
   await maybeShowMilestone($("supportCard"), saved / 3600, [1, 10, 50, 200], (h) =>
-    `Tempo has saved you ${h} hour${h === 1 ? "" : "s"} of watching so far. It's free, with no ads and no tracking. If that's worth a coffee, tips keep it maintained.`);
+    `Tempo has saved you ${h} hour${h === 1 ? "" : "s"} of watching so far.`);
 }
 
 function renderKeysHint() {

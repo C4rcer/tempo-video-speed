@@ -44,8 +44,28 @@ function addStats(watched, saved) {
   });
 }
 
-// tabId -> true when some frame in the tab has media (used for key relay + badge).
-const mediaTabs = new Set();
+// Tabs in which some frame has media (used for the badge). Kept in
+// storage.session, not in a variable: Firefox stops this script after 30 s
+// without work, and a variable would be empty when it starts again.
+const MEDIA_TABS = "mediaTabs";
+let mediaTabsReady = null;
+function getMediaTabs() {
+  if (!mediaTabsReady) {
+    mediaTabsReady = browser.storage.session.get(MEDIA_TABS).then(
+      (got) => new Set(Array.isArray(got[MEDIA_TABS]) ? got[MEDIA_TABS] : []),
+      () => new Set(),
+    );
+  }
+  return mediaTabsReady;
+}
+async function markMediaTab(tabId, has) {
+  const tabs = await getMediaTabs();
+  if (tabs.has(tabId) === has) return tabs;
+  if (has) tabs.add(tabId);
+  else tabs.delete(tabId);
+  await browser.storage.session.set({ [MEDIA_TABS]: [...tabs] }).catch(() => {});
+  return tabs;
+}
 
 function setBadge(tabId, rate, hasMedia) {
   if (tabId == null) return;
@@ -66,7 +86,7 @@ async function setRateForTab(tabId, url, rate, from) {
   const r = clampRate(rate);
   await persistRate(siteKey(url), r, settings);
   await broadcast(tabId, { type: "tempo:apply", rate: r, from });
-  setBadge(tabId, r, mediaTabs.has(tabId));
+  setBadge(tabId, r, (await getMediaTabs()).has(tabId));
   return r;
 }
 
@@ -88,13 +108,16 @@ browser.runtime.onMessage.addListener((msg, sender) => {
       return setRateForTab(tabId, url, msg.rate, msg.from);
     }
     case "tempo:report":
-      if (tab) {
-        if (msg.hasMedia) mediaTabs.add(tab.id);
-        setBadge(tab.id, msg.rate, msg.hasMedia || mediaTabs.has(tab.id));
-      }
-      return undefined;
+      if (!tab) return undefined;
+      return (async () => {
+        const tabs = msg.hasMedia ? await markMediaTab(tab.id, true) : await getMediaTabs();
+        setBadge(tab.id, msg.rate, tabs.has(tab.id));
+      })();
     case "tempo:relayKey":
-      if (tab && mediaTabs.has(tab.id)) broadcast(tab.id, { type: "tempo:key", action: msg.action });
+      // Sent to every frame of the tab; only a frame with a player acts on it.
+      // No list of "tabs with media" is consulted: whatever this script
+      // remembers is gone each time Firefox stops it.
+      if (tab) broadcast(tab.id, { type: "tempo:key", action: msg.action });
       return undefined;
     case "tempo:stats":
       return addStats(Number(msg.watched) || 0, Number(msg.saved) || 0);
@@ -104,9 +127,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 });
 
 browser.tabs.onUpdated.addListener((tabId, info) => {
-  if (info.status === "loading" && info.url) mediaTabs.delete(tabId);
+  if (info.status === "loading" && info.url) markMediaTab(tabId, false);
 });
-browser.tabs.onRemoved.addListener((tabId) => mediaTabs.delete(tabId));
+browser.tabs.onRemoved.addListener((tabId) => markMediaTab(tabId, false));
 
 browser.action.setBadgeBackgroundColor({ color: "#5b21b6" }).catch(() => {});
 if (browser.action.setBadgeTextColor) browser.action.setBadgeTextColor({ color: "#ffffff" }).catch(() => {});
